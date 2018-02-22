@@ -8,6 +8,9 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"path/filepath"
+
+	"github.com/koding/multiconfig"
 )
 
 const supportedLineFormat = "[IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg"
@@ -22,7 +25,7 @@ type Log struct {
 	Msg      string
 }
 
-func parse_logfile(year, zone string, logfile string, callback func(Log) error) error {
+func parseLog(year, zone string, logfile string, callback func(Log) error) error {
 	fp, err := os.Open(logfile)
 	if err != nil {
 		return fmt.Errorf("os.Open error: %s", err.Error())
@@ -115,12 +118,38 @@ func handler(l Log) error {
 	return nil
 }
 
+type Conf struct {
+	LogDir    string `default:""`
+}
+
 func main() {
+	argsLen := len(os.Args)
+	if argsLen < 1 && argsLen > 3 {
+		log.Fatalf("Usage: %s [g.toml] [g.log]", os.Args[0])
+	}
+	confDir := "g.toml"
+	if argsLen > 1 {
+		confDir = os.Args[1]
+	}
+	if filepath.Ext(confDir) != ".toml" {
+		log.Fatalf("The file name extension of config file must be \".toml\"")
+	}
+	log.Printf("Try to load config from %s", confDir)
+	m := multiconfig.NewWithPath(confDir)
+	aConf := new(Conf)
+	m.MustLoad(aConf)
+	if argsLen == 3 {
+		aConf.LogDir = os.Args[2]
+	}
+	if aConf.LogDir == "" {
+		aConf.LogDir = "g.log"
+	}
+
 	now := time.Now()
 	year := fmt.Sprintf("%d", now.Year())
 	zone, _ := now.Zone()
 
-	err := parse_logfile(year, zone, "g.log", handler)
+	err := parseLog(year, zone, aConf.LogDir, handler)
 	if err != nil {
 		log.Println(err)
 	}
