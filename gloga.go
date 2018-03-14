@@ -118,11 +118,18 @@ func handler(l Log) error {
 	return nil
 }
 
-type Conf struct {
+type AConf struct {
 	LogDir    string `default:""`
 }
 
+type GlogA struct {
+	Conf AConf
+	Year string
+	Zone string
+}
+
 func main() {
+	var loga GlogA
 	argsLen := len(os.Args)
 	if argsLen < 1 && argsLen > 3 {
 		log.Fatalf("Usage: %s [g.toml] [g.log]", os.Args[0])
@@ -136,18 +143,17 @@ func main() {
 	}
 	log.Printf("Try to load config from %s", confDir)
 	m := multiconfig.NewWithPath(confDir)
-	aConf := new(Conf)
-	m.MustLoad(aConf)
+	m.MustLoad(loga.Conf)
 	if argsLen == 3 {
-		aConf.LogDir = os.Args[2]
+		loga.Conf.LogDir = os.Args[2]
 	}
-	if aConf.LogDir == "" {
-		aConf.LogDir = "g.log"
+	if loga.Conf.LogDir == "" {
+		loga.Conf.LogDir = "g.log"
 	}
 
 	now := time.Now()
-	year := fmt.Sprintf("%d", now.Year())
-	zone, _ := now.Zone()
+	loga.Year = fmt.Sprintf("%d", now.Year())
+	loga.Zone, _ = now.Zone()
 
 	err := parseLog(year, zone, aConf.LogDir, handler)
 	if err != nil {
