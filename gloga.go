@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
-	"path/filepath"
 
 	"github.com/koding/multiconfig"
 )
@@ -23,6 +23,7 @@ type Log struct {
 	File     string
 	Line     uint64
 	Msg      string
+	Log      string
 }
 
 func parseLog(year, zone string, logfile string, callback func(Log) error) error {
@@ -87,12 +88,14 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 					File:     string(line[4]),
 					Line:     linenum,
 					Msg:      string(line[6]),
+					Log:      scanner.Text(),
 				}
 				gotLog = true
 			} else {
 				log.Printf("Got unsupport format line %s", scanner.Text())
 				if gotLog {
 					prevlog.Msg += scanner.Text()
+					prevlog.Log += scanner.Text()
 					log.Printf("Added to prevlog")
 				} else {
 					log.Printf("Droped")
@@ -119,7 +122,7 @@ func handler(l Log) error {
 }
 
 type Conf struct {
-	LogDir    string `default:""`
+	LogDir string `default:""`
 }
 
 func main() {
