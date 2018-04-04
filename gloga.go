@@ -117,13 +117,22 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 }
 
 func handler(l Log) error {
-	log.Println(l)
+	for _, Ignore := range(aConf.Ignores) {
+		//log.Println(Ignore)
+		if Ignore.File == l.File && Ignore.Line == l.Line {
+			return nil
+		}
+	}
+	fmt.Println(l.Log)
 	return nil
 }
 
 type Conf struct {
 	LogDir string `default:""`
+	Ignores []Log
 }
+
+var aConf *Conf
 
 func main() {
 	argsLen := len(os.Args)
@@ -139,7 +148,7 @@ func main() {
 	}
 	log.Printf("Try to load config from %s", confDir)
 	m := multiconfig.NewWithPath(confDir)
-	aConf := new(Conf)
+	aConf = new(Conf)
 	m.MustLoad(aConf)
 	if argsLen == 3 {
 		aConf.LogDir = os.Args[2]
