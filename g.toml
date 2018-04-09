@@ -1,0 +1,2 @@
+#Ignores = [{File="config.go", Line=47},
+#           {File="config.go", Line=96}]
