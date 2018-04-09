@@ -128,7 +128,7 @@ func handler(l Log) error {
 }
 
 type Conf struct {
-	LogDir  string `default:""`
+	LogDir  []string
 	Ignores []Log
 }
 
@@ -151,10 +151,10 @@ func main() {
 	aConf = new(Conf)
 	m.MustLoad(aConf)
 	if argsLen == 3 {
-		aConf.LogDir = os.Args[2]
+		aConf.LogDir = append(aConf.LogDir, os.Args[2])
 	}
-	if aConf.LogDir == "" {
-		aConf.LogDir = "g.log"
+	if len(aConf.LogDir) == 0 {
+		aConf.LogDir = append(aConf.LogDir, "g.log")
 	}
 
 	log.Printf("Config: %+v", aConf)
@@ -163,8 +163,10 @@ func main() {
 	year := fmt.Sprintf("%d", now.Year())
 	zone, _ := now.Zone()
 
-	err := parseLog(year, zone, aConf.LogDir, handler)
-	if err != nil {
-		log.Println(err)
+	for _, file := range aConf.LogDir {
+		err := parseLog(year, zone, file, handler)
+		if err != nil {
+			log.Printf("Parse %s got error: %v", file, err)
+		}
 	}
 }
