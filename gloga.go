@@ -117,7 +117,7 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 }
 
 func handler(l Log) error {
-	for _, Ignore := range(aConf.Ignores) {
+	for _, Ignore := range aConf.Ignores {
 		//log.Println(Ignore)
 		if Ignore.File == l.File && Ignore.Line == l.Line {
 			return nil
@@ -128,7 +128,7 @@ func handler(l Log) error {
 }
 
 type Conf struct {
-	LogDir string `default:""`
+	LogDir  string `default:""`
 	Ignores []Log
 }
 
