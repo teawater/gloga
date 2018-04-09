@@ -157,6 +157,8 @@ func main() {
 		aConf.LogDir = "g.log"
 	}
 
+	log.Printf("Config: %+v", aConf)
+
 	now := time.Now()
 	year := fmt.Sprintf("%d", now.Year())
 	zone, _ := now.Zone()
