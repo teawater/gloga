@@ -1,3 +1,5 @@
+#LogDir = ["1.log", "2.log"]
+#Keep = [{File="config.go", Line=47},
+#           {File="config.go", Line=96}, {File="json.go", Line=247}]
 #Ignores = [{File="config.go", Line=47},
 #           {File="config.go", Line=96}]
-#LogDir = ["1.log", "2.log"]

@@ -116,9 +116,18 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 	return nil
 }
 
-func handler(l Log) error {
+func handlerKeep(l Log) error {
+	for _, keep := range aConf.Keep {
+		if keep.File == l.File && keep.Line == l.Line {
+			fmt.Println(l.Log)
+			break
+		}
+	}
+	return nil
+}
+
+func handlerIgnores(l Log) error {
 	for _, Ignore := range aConf.Ignores {
-		//log.Println(Ignore)
 		if Ignore.File == l.File && Ignore.Line == l.Line {
 			return nil
 		}
@@ -129,6 +138,7 @@ func handler(l Log) error {
 
 type Conf struct {
 	LogDir  []string
+	Keep    []Log
 	Ignores []Log
 }
 
@@ -150,6 +160,22 @@ func main() {
 	m := multiconfig.NewWithPath(confDir)
 	aConf = new(Conf)
 	m.MustLoad(aConf)
+
+	//Check Keep and Ignores
+	if len(aConf.Keep) > 0 && len(aConf.Ignores) > 0 {
+		log.Printf("Config Keep and Ignores cannot work together")
+		return
+	}
+
+	var handler func(l Log) error
+	if len(aConf.Keep) > 0 {
+		handler = handlerKeep
+	}
+	if len(aConf.Ignores) > 0 {
+		handler = handlerIgnores
+	}
+
+	//Check LogDir
 	if argsLen == 3 {
 		aConf.LogDir = append(aConf.LogDir, os.Args[2])
 	}
