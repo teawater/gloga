@@ -26,6 +26,22 @@ type Log struct {
 	Log      string
 }
 
+const (
+	dateEarly = iota
+	dateLate
+	dateOK
+)
+
+func checkLogDate(t time.Time) int {
+	if aConf.StartDate != (time.Time{}) && t.Before(aConf.StartDate) {
+		return dateEarly
+	}
+	if aConf.StopDate != (time.Time{}) && t.After(aConf.StopDate) {
+		return dateLate
+	}
+	return dateOK
+}
+
 func parseLog(year, zone string, logfile string, callback func(Log) error) error {
 	fp, err := os.Open(logfile)
 	if err != nil {
@@ -75,9 +91,15 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 
 				//Now, current line is a right log.
 				if gotLog {
-					err = callback(prevlog)
-					if err != nil {
-						return fmt.Errorf("callback func got %s", err.Error())
+					res := checkLogDate(prevlog.Date)
+					if res == dateOK {
+						err = callback(prevlog)
+						if err != nil {
+							return fmt.Errorf("callback func got %s", err.Error())
+						}
+					}
+					if res == dateLate {
+						return nil
 					}
 				}
 
@@ -104,9 +126,11 @@ func parseLog(year, zone string, logfile string, callback func(Log) error) error
 		}
 	}
 	if gotLog {
-		err = callback(prevlog)
-		if err != nil {
-			return fmt.Errorf("callback func got %s", err.Error())
+		if checkLogDate(prevlog.Date) == dateOK {
+			err = callback(prevlog)
+			if err != nil {
+				return fmt.Errorf("callback func got %s", err.Error())
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -136,13 +160,24 @@ func handlerIgnores(l Log) error {
 	return nil
 }
 
-type Conf struct {
-	LogDir  []string
-	Keep    []Log
-	Ignores []Log
+type fileConf struct {
+	LogDir     []string
+	Keep       []Log
+	Ignores    []Log
+	DateFormat string
+	StartDate  string
+	StopDate   string
 }
 
-var aConf *Conf
+type Conf struct {
+	LogDir    []string
+	Keep      []Log
+	Ignores   []Log
+	StartDate time.Time
+	StopDate  time.Time
+}
+
+var aConf Conf
 
 func main() {
 	argsLen := len(os.Args)
@@ -158,15 +193,34 @@ func main() {
 	}
 	log.Printf("Try to load config from %s", confDir)
 	m := multiconfig.NewWithPath(confDir)
-	aConf = new(Conf)
-	m.MustLoad(aConf)
+	fconf := new(fileConf)
+	m.MustLoad(fconf)
+
+	//Convert fileconf to aConf
+	if fconf.DateFormat != "" {
+		var err error
+		if fconf.StartDate != "" {
+			aConf.StartDate, err = time.Parse(fconf.DateFormat, fconf.StartDate)
+			if err != nil {
+				log.Panicf("time.Parse StartDate %s: %s", fconf.StartDate, err.Error())
+			}
+		}
+		if fconf.StopDate != "" {
+			aConf.StopDate, err = time.Parse(fconf.DateFormat, fconf.StopDate)
+			if err != nil {
+				log.Panicf("time.Parse StopDate %s: %s", fconf.StopDate, err.Error())
+			}
+		}
+	}
+	aConf.LogDir = fconf.LogDir
+	aConf.Keep = fconf.Keep
+	aConf.Ignores = fconf.Ignores
 
 	//Check Keep and Ignores
 	if len(aConf.Keep) > 0 && len(aConf.Ignores) > 0 {
 		log.Printf("Config Keep and Ignores cannot work together")
 		return
 	}
-
 	var handler func(l Log) error
 	if len(aConf.Keep) > 0 {
 		handler = handlerKeep

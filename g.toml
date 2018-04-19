@@ -3,3 +3,8 @@
 #           {File="config.go", Line=96}, {File="json.go", Line=247}]
 #Ignores = [{File="config.go", Line=47},
 #           {File="config.go", Line=96}]
+
+#2006-01-02T15:04:05.999999999Z07:00
+DateFormat = "20060102 15:04 MST"
+#StartDate = "20180201 10:14 CST"
+#StopDate = "20180201 09:59 UTC"
